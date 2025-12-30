@@ -1,0 +1,32 @@
+[package]
+name = "land-server"
+version = "0.1.0"
+edition = "2024"
+description = "rpc server server for land"
+license = "MIT"
+
+[dependencies]
+mio = { version = "1.1", features = ["net", "os-poll"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+itoa = "1.0"
+once_cell = "1.21"
+land-channel = { path = "../channel" }
+land-cpu = { path = "../cpu" }
+land_traits = { path = "../traits" }
+land-quic = { path = "../quic" }
+thiserror = "2"
+log = "0.4"
+
+[dev-dependencies]
+env_logger = "0.11"
+
+[[example]]
+name = "simple_server"
+path = "examples/simple_server.rs"
+required-features = []
+
+[[example]]
+name = "stress_test"
+path = "examples/stress_test.rs"
+required-features = []
