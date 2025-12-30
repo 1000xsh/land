@@ -1,0 +1,25 @@
+[package]
+name = "land-pubsub"
+version = "0.1.0"
+edition = "2024"
+description = "websocket slot subscriber for solana"
+license = "MIT"
+
+[dependencies]
+land-channel = { path = "../channel" }
+land-cpu = { path = "../cpu" }
+
+# minimal json parsing
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# websocket handshake
+base64 = "0.22"
+sha1 = "0.10"
+
+[dev-dependencies]
+# for benchmarking against solana pubsub client
+# solana-pubsub-client = { path = "/home/neo/work/land/agave/pubsub-client" }
+solana-pubsub-client = "3.1.5"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+futures-util = { version = "0.3" }
