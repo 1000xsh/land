@@ -1,4 +1,4 @@
-````md
+
 # land channel
 
 **land channel** is a low-latency, lock-free inter-thread communication library for rust. it uses pre-allocated ring buffers, sequence-based coordination, and configurable wait strategies to achieve predictable, minimal-latency message passing.
@@ -67,5 +67,4 @@ assert_eq!(&msg[..], b"hello");
 * prefer **spsc** for absolute lowest latency; use **mpsc** when you need multiple producers.
 * use **batching** (`claim_batch` / `recv_batch` / `poll`) for throughput-critical paths.
 
-```
 ```
