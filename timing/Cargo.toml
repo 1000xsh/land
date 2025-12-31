@@ -1,0 +1,17 @@
+[package]
+name = "land-timing"
+
+
+[dependencies]
+
+[dev-dependencies]
+# for testing
+criterion = "0.8"
+
+[features]
+default = ["enabled"]
+enabled = []
+
+# [[bench]]
+# name = "rdtsc"
+# harness = false
