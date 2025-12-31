@@ -35,7 +35,7 @@ mod websocket;
 // public exports
 pub use error::{Error, Result};
 pub use subscriber::SlotSubscriber;
-pub use types::{Slot, SlotInfo, SubscriptionId};
+pub use types::{ConnectionState, Slot, SlotInfo, SubscriptionId};
 
 // re-export land-channel types for convenience
 pub use land_channel::spsc::{Consumer, Producer};

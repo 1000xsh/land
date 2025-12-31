@@ -81,6 +81,12 @@ impl SlotSubscriber {
     pub fn last_slot(&self) -> u64 {
         self.state.last_slot()
     }
+
+    // get connection state for monitoring
+    #[inline]
+    pub fn connection_state(&self) -> Arc<ConnectionState> {
+        Arc::clone(&self.state)
+    }
 }
 
 impl Drop for SlotSubscriber {
