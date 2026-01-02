@@ -4,7 +4,7 @@ use land_channel::spsc::Consumer;
 use land_cpu::{prefetch_read, set_cpu_affinity, SpinLoopHintWait};
 use land_quic::{SendOptions, TransactionSender};
 use land_traits::LeaderLookup;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::mem::MaybeUninit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
