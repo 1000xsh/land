@@ -1,0 +1,36 @@
+[package]
+name = "land-quic"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# openssl (quictls) backend for Ed25519 signature scheme support
+# boringSSL doesnt properly advertise Ed25519 which solana validators require
+# quiche = { version = "0.24", default-features = false, features = ["openssl"] }
+ring = "0.17"
+mio = { version = "1.1", features = ["net", "os-poll"] }
+libc = "0.2"
+log = "0.4"
+thiserror = "2"
+env_logger = "0.11"
+land-sync = { path = "../sync"}
+land-cpu = { path = "../cpu" }
+land_traits = { path = "../traits" }
+land-timing = { path = "../timing" }
+quiche = { path = "../../quiche_ax/quiche", default-features = false, features = ["openssl"] }
+
+# io_uring for zero-copy UDP send
+io-uring = { version = "0.6", optional = true }
+
+[features]
+default = ["io_uring"]
+io_uring = ["dep:io-uring"]
+
+[dev-dependencies]
+env_logger = "0.11"
+
+# [profile.release]
+# opt-level = 3
+# lto = "fat"
+# codegen-units = 1
+# panic = "abort"
