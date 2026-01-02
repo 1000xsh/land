@@ -155,7 +155,16 @@ fn process_request<L: LeaderLookup>(queued: QueuedRequest, sender: &mut Transact
         return;
     }
 
-    // send via QUIC with fanout and optional neighbor fanout
+    // generate request id and send response (non-blocking)
+    let request_id_str = format!("{:016x}", queued.request_id);
+    if let Err(e) = queued.response_tx.send(Ok(request_id_str)) {
+        error!(
+            "Request {}: Failed to send response: {}",
+            queued.request_id, e
+        );
+    }
+
+    // send via QUIC with fanout
     let fanout = queued.request.fanout as usize;
     let send_opts = SendOptions {
         tpu_port: None,
@@ -165,21 +174,20 @@ fn process_request<L: LeaderLookup>(queued: QueuedRequest, sender: &mut Transact
 
     match sender.send_fanout(&queued.request.transaction, fanout, send_opts) {
         Ok(result) => {
-            let request_id_str = format!("{:016x}", queued.request_id);
-            info!(
-                "process_request: sent={} early_data={} queued={} queue_full={} dead={} errors={}",
-                result.sent, result.early_data, result.queued, result.queue_full, result.dead, result.errors
+            debug!(
+                "Request {}: sent={} early_data={} queued={} queue_full={} dead={} errors={}",
+                queued.request_id,
+                result.sent,
+                result.early_data,
+                result.queued,
+                result.queue_full,
+                result.dead,
+                result.errors
             );
-            if let Err(e) = queued.response_tx.send(Ok(request_id_str)) {
-                error!(
-                    "Request {}: Failed to send response: {}",
-                    queued.request_id, e
-                );
-            }
         }
         Err(e) => {
             error!("Request {}: QUIC send failed: {}", queued.request_id, e);
-            let _ = queued.response_tx.send(Err(e.to_string()));
+            // response already sent, just log the error
         }
     }
 }
