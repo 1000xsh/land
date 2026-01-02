@@ -17,7 +17,7 @@ land-sync = { path = "../sync"}
 land-cpu = { path = "../cpu" }
 land_traits = { path = "../traits" }
 land-timing = { path = "../timing" }
-quiche = { path = "../../quiche_ax/quiche", default-features = false, features = ["openssl"] }
+quiche = { git = "https://github.com/ax-x2/quiche.git", branch = "handshake_confirmed", default-features = false, features = ["openssl"] }
 
 # io_uring for zero-copy UDP send
 io-uring = { version = "0.6", optional = true }

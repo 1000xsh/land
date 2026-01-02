@@ -92,19 +92,19 @@ impl ConnectionSlot {
     /// get address (only safe when occupied)
     #[inline(always)]
     pub unsafe fn addr(&self) -> SocketAddr {
-        *self.addr.get()
+        unsafe { *self.addr.get() }
     }
 
     /// get connection reference (only safe when occupied)
     #[inline(always)]
     pub unsafe fn connection(&self) -> Option<&QuicConnection> {
-        (*self.connection.get()).as_ref()
+        unsafe { (*self.connection.get()).as_ref() }
     }
 
     /// get mutable connection reference (only safe when occupied)
     #[inline(always)]
     pub unsafe fn connection_mut(&self) -> Option<&mut QuicConnection> {
-        (*self.connection.get()).as_mut()
+        unsafe { (*self.connection.get()).as_mut() }
     }
 
     /// get state
@@ -425,7 +425,7 @@ impl ConnectionPool {
                 let slot = &self.slots[idx];
 
                 if slot.is_occupied() {
-                    let slot_addr = slot.addr();
+                    let slot_addr = unsafe { slot.addr() };
                     if socket_addr_to_u128(slot_addr) == target {
                         found_idx = Some(idx);
                         break;

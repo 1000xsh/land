@@ -160,15 +160,15 @@ fn process_request<L: LeaderLookup>(queued: QueuedRequest, sender: &mut Transact
     let send_opts = SendOptions {
         tpu_port: None,
         fanout: None,
-        neighbor_fanout: queued.request.neighbor_fanout,
+        // neighbor_fanout: queued.request.neighbor_fanout,
     };
 
     match sender.send_fanout(&queued.request.transaction, fanout, send_opts) {
         Ok(result) => {
             let request_id_str = format!("{:016x}", queued.request_id);
             info!(
-                "process_request: sent={} early_data={} queued={} queue_full={} dead={} errors={} neighbor_sent={}",
-                result.sent, result.early_data, result.queued, result.queue_full, result.dead, result.errors, result.neighbor_sent
+                "process_request: sent={} early_data={} queued={} queue_full={} dead={} errors={}",
+                result.sent, result.early_data, result.queued, result.queue_full, result.dead, result.errors
             );
             if let Err(e) = queued.response_tx.send(Ok(request_id_str)) {
                 error!(

@@ -81,7 +81,8 @@ impl<const N: usize> TransactionQueue<N> {
         // safety: SPSC - producer has exclusive access to head slot
         unsafe {
             let buf_ptr = self.buffers[slot].get();
-            (*buf_ptr)[..data.len()].copy_from_slice(data);
+            let buf = &mut *buf_ptr;
+            buf[..data.len()].copy_from_slice(data);
 
             let len_ptr = self.lengths[slot].get();
             *len_ptr = data.len() as u16;

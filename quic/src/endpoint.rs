@@ -29,13 +29,13 @@ const RECV_BUF_SIZE: usize = MAX_PACKET_SIZE;
 unsafe fn sockaddr_to_socket_addr(addr: &libc::sockaddr_storage) -> Option<SocketAddr> {
     match addr.ss_family as libc::c_int {
         libc::AF_INET => {
-            let addr4 = &*(addr as *const _ as *const libc::sockaddr_in);
+            let addr4 = unsafe { &*(addr as *const _ as *const libc::sockaddr_in) };
             let ip = std::net::Ipv4Addr::from(u32::from_be(addr4.sin_addr.s_addr));
             let port = u16::from_be(addr4.sin_port);
             Some(SocketAddr::new(ip.into(), port))
         }
         libc::AF_INET6 => {
-            let addr6 = &*(addr as *const _ as *const libc::sockaddr_in6);
+            let addr6 = unsafe { &*(addr as *const _ as *const libc::sockaddr_in6) };
             let ip = std::net::Ipv6Addr::from(addr6.sin6_addr.s6_addr);
             let port = u16::from_be(addr6.sin6_port);
             Some(SocketAddr::new(ip.into(), port))

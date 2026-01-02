@@ -12,7 +12,7 @@ path = "src/main.rs"
 land-leader = { path = "../leader" }
 land-quic = { path = "../quic" }
 land-cpu = { path = "../cpu" }
-land-server = { path = "../server2" }
+land-server = { path = "../server" }
 land_traits = { path = "../traits" }
 tokio = { version = "1", features = ["rt", "macros", "signal", "time"] }
 log = "0.4"

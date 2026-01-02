@@ -58,5 +58,5 @@ pub use land_cpu::{
 
 // re-export fence helpers for architecture-aware memory ordering
 pub use land_cpu::{
-    cpu_pause, fence_acq_rel, fence_acquire, fence_release, has_strong_memory_ordering,
+    cpu_pause, fence_acq_rel, fence_acquire, fence_release,
 };
