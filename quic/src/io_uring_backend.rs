@@ -20,6 +20,21 @@ use std::os::unix::io::RawFd;
 /// maximum packet size (MTU) - matches MAX_PACKET_SIZE in connection.rs
 const MAX_PACKET_SIZE: usize = 1350;
 
+/// in-flight operation holding buffer and metadata
+/// all fields must remain alive until io_uring completion
+struct InFlightOp {
+    buf: Box<[u8; MAX_PACKET_SIZE]>,
+    sockaddr: libc::sockaddr_storage,
+    iovec: libc::iovec,
+    msghdr: libc::msghdr,
+}
+
+// safety: InFlightOp contains raw pointers (in iovec/msghdr), but they only point
+// to data within the same InFlightOp allocation. when the Box<InFlightOp> moves,
+// all data moves together as a unit. the pointers are never dereferenced during
+// the move, only by io_uring kernel code which accesses the stable Box address.
+unsafe impl Send for InFlightOp {}
+
 /// io_uring backend for zero-copy UDP send
 pub struct IoUringBackend {
     /// io_uring instance
@@ -28,8 +43,8 @@ pub struct IoUringBackend {
     /// pre-allocated buffer pool (available for use)
     buf_pool: Vec<Box<[u8; MAX_PACKET_SIZE]>>,
 
-    /// in-flight buffers (kernel owns these, can't reuse until completion)
-    in_flight: HashMap<u64, Box<[u8; MAX_PACKET_SIZE]>>,
+    /// in-flight operations (kernel owns these, cant reuse until completion)
+    in_flight: HashMap<u64, Box<InFlightOp>>,
 
     /// user data counter for tracking submissions (monotonic)
     next_user_data: u64,
@@ -114,30 +129,34 @@ impl IoUringBackend {
         // build sockaddr for destination
         let (sockaddr_storage, sockaddr_len) = Self::build_sockaddr(addr);
 
-        // safety: sockaddr_storage is a valid libc::sockaddr_storage
-        let sockaddr_ptr =
-            &sockaddr_storage as *const libc::sockaddr_storage as *const libc::sockaddr;
+        // create in-flight operation with dummy pointers (will be fixed after boxing)
+        let mut op = Box::new(InFlightOp {
+            buf,
+            sockaddr: sockaddr_storage,
+            iovec: libc::iovec {
+                iov_base: std::ptr::null_mut(),
+                iov_len: data.len(),
+            },
+            msghdr: libc::msghdr {
+                msg_name: std::ptr::null_mut(),
+                msg_namelen: sockaddr_len,
+                msg_iov: std::ptr::null_mut(),
+                msg_iovlen: 1,
+                msg_control: std::ptr::null_mut(),
+                msg_controllen: 0,
+                msg_flags: 0,
+            },
+        });
 
-        // create iovec for the buffer
-        let iovec = libc::iovec {
-            iov_base: buf.as_ptr() as *mut libc::c_void,
-            iov_len: data.len(),
-        };
-
-        // create msghdr for sendmsg
-        let msghdr = libc::msghdr {
-            msg_name: sockaddr_ptr as *mut libc::c_void,
-            msg_namelen: sockaddr_len,
-            msg_iov: &iovec as *const libc::iovec as *mut libc::iovec,
-            msg_iovlen: 1,
-            msg_control: std::ptr::null_mut(),
-            msg_controllen: 0,
-            msg_flags: 0,
-        };
+        // fix up pointers to point to stable addresses inside the Box
+        // safety: Box guarantees stable address until drop
+        op.iovec.iov_base = op.buf.as_ptr() as *mut libc::c_void;
+        op.msghdr.msg_name = &op.sockaddr as *const _ as *mut libc::c_void;
+        op.msghdr.msg_iov = &op.iovec as *const libc::iovec as *mut libc::iovec;
 
         // create io_uring sendmsg operation
-        // opcode::SendMsg sends UDP packet with specified destination
-        let send_e = opcode::SendMsg::new(types::Fd(socket_fd), &msghdr as *const libc::msghdr)
+        // safety: msghdr and referenced data remain valid until completion (stored in in_flight)
+        let send_e = opcode::SendMsg::new(types::Fd(socket_fd), &op.msghdr as *const libc::msghdr)
             .build()
             .user_data(user_data);
 
@@ -149,8 +168,8 @@ impl IoUringBackend {
                 .map_err(|_| "Failed to push to submission queue")?;
         }
 
-        // track buffer as in-flight (kernel now owns it)
-        self.in_flight.insert(user_data, buf);
+        // track operation as in-flight (kernel now owns all the data)
+        self.in_flight.insert(user_data, op);
 
         // submit all pending operations to kernel
         self.ring
@@ -197,8 +216,8 @@ impl IoUringBackend {
             }
 
             // reclaim buffer regardless of success/failure (prevent leaks)
-            if let Some(buf) = self.in_flight.remove(&user_data) {
-                self.buf_pool.push(buf);
+            if let Some(op) = self.in_flight.remove(&user_data) {
+                self.buf_pool.push(op.buf);
                 reclaimed += 1;
             } else {
                 log::warn!("io_uring: orphaned completion (user_data={})", user_data);
