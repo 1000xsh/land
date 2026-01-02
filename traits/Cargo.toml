@@ -1,0 +1,9 @@
+[package]
+name = "land_traits"
+version = "0.1.0"
+edition = "2024"
+description = "shared traits for land_* crates"
+license = "MIT"
+
+[dependencies]
+# none
