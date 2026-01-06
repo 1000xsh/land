@@ -1,0 +1,15 @@
+[package]
+name = "land_unroll"
+version = "0.1.0"
+edition = "2024"
+description = "loop unrolling"
+license = "MIT"
+
+[lib]
+name = "land_unroll"
+path = "src/lib.rs"
+
+[dependencies]
+
+[dev-dependencies]
+land-timing = { path = "../timing", features = ["enabled"] }
